@@ -1,6 +1,6 @@
 newQuarkTarget(
-  <TargetName>
+  erysc
 
-  <TargetType>
-  <ProjectName>.cpp
+  BINARY
+  Erys.cpp
 )

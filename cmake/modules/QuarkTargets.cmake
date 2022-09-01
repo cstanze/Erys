@@ -19,8 +19,11 @@
 # LINK_LIBS libs...
 #   Libraries to link with
 #
+# LLVM_LIBS libs...
+#   LLVM Libraries to link with
+#
 function(newQuarkTarget targetName)
-  cmake_parse_arguments(NQT "STATIC;BINARY" "INCLUDE_INSTALL_DIR;LIBRARY_INSTALL_DIR" "LINK_LIBS" ${ARGN})
+  cmake_parse_arguments(NQT "STATIC;BINARY" "INCLUDE_INSTALL_DIR;LIBRARY_INSTALL_DIR" "LINK_LIBS;LLVM_LIBS" ${ARGN})
 
   # Gets all the sources listed in the arguments
   set(NQT_SOURCES ${NQT_UNPARSED_ARGUMENTS})
@@ -58,12 +61,28 @@ function(newQuarkTarget targetName)
       )
   endif()
 
+  # Required libs
+  target_link_libraries(
+    ${targetName}
+    PRIVATE Result::Result
+    PRIVATE cxxopts::cxxopts
+  )
+
   # Add the libraries
   if (NQT_LINK_LIBS)
     target_link_libraries(
       ${targetName}
       ${NQT_LINK_LIBS}
       ${CMAKE_DL_LIBS}
+    )
+  endif()
+
+  if (NQT_LLVM_LIBS)
+    llvm_map_components_to_libnames(llvm_libs support core irreader)
+
+    target_link_libraries(
+      ${targetName}
+      ${llvm_libs}
     )
   endif()
 
