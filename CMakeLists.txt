@@ -33,6 +33,7 @@ message(STATUS "Using prefix: ${CMAKE_INSTALL_PREFIX}")
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${PROJECT_SOURCE_DIR}/cmake/modules")
 
 include(QuarkTargets)
+include(CPM)
 
 # macOS RPath fix
 set(ORIGIN "$ORIGIN")
@@ -133,7 +134,7 @@ endif()
 
 configure_file(
   ${CMAKE_SOURCE_DIR}/include/Config.hpp.in
-  ${CMAKE_BINARY_DIR}/include/Config.hpp
+  ${CMAKE_SOURCE_DIR}/include/Config.hpp
   @ONLY
 )
 
@@ -154,11 +155,27 @@ else()
 endif()
 
 # ccache
-find_program(CCACHE_PROGRAM ccache)
-if (CCACHE_PROGRAM)
-  message(STATUS "Using ccache: ${CCACHE_PROGRAM}")
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "${CCACHE_PROGRAM}")
+CPMAddPackage(
+  NAME Ccache.cmake
+  GITHUB_REPOSITORY TheLartians/Ccache.cmake
+  VERSION 1.2
+)
+
+CPMAddPackage(
+  NAME fmt
+  GIT_TAG 6.1.2
+  GITHUB_REPOSITORY fmtlib/fmt
+)
+
+CPMAddPackage(
+  NAME magic_enum
+  GITHUB_REPOSITORY Neargye/magic_enum
+  GIT_TAG v0.8.1
+)
+
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" AND NOT "${USE_CCACHE}" EQUAL "OFF")
+  set(USE_CCACHE ON)
+  set(CCACHE_OPTIONS "--show-stats")
 endif()
 
 # Install CMake modules
@@ -173,14 +190,19 @@ install(
   DESTINATION ${CMAKE_INSTALL_PREFIX}/include
 )
 
+# Dependencies
 find_package(LLVM REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
+message(STATUS "LLVM Include Dirs: ${LLVM_INCLUDE_DIRS}")
+
 include_directories(${LLVM_INCLUDE_DIRS})
 separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 add_definitions(${LLVM_DEFINITIONS_LIST})
 
+# TODO: Move vendor dependencies to use CPM
 add_subdirectory(vendor)
+
 add_subdirectory(lib)

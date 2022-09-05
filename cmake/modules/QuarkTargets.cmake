@@ -23,7 +23,7 @@
 #   LLVM Libraries to link with
 #
 function(newQuarkTarget targetName)
-  cmake_parse_arguments(NQT "STATIC;BINARY" "INCLUDE_INSTALL_DIR;LIBRARY_INSTALL_DIR" "LINK_LIBS;LLVM_LIBS" ${ARGN})
+  cmake_parse_arguments(NQT "STATIC;BINARY" "INCLUDE_INSTALL_DIR;LIBRARY_INSTALL_DIR" "LINK_LIBS" ${ARGN})
 
   # Gets all the sources listed in the arguments
   set(NQT_SOURCES ${NQT_UNPARSED_ARGUMENTS})
@@ -33,7 +33,7 @@ function(newQuarkTarget targetName)
   # Recursively gets all the headers
   file(GLOB_RECURSE NQT_HEADERS
       ${PROJECT_SOURCE_DIR}/include/${base_dir}/*.h
-      ${PROJECT_SOURCE_DIR}/include/${base_dir}
+      ${PROJECT_SOURCE_DIR}/include/${base_dir}/*.hpp
       ${PROJECT_SOURCE_DIR}/include/*.h
       ${PROJECT_SOURCE_DIR}/include/*.hpp)
   
@@ -61,30 +61,53 @@ function(newQuarkTarget targetName)
       )
   endif()
 
+  # Set warning level
+  target_compile_options(
+    ${targetName}
+    PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+  
+    -Wno-unused-parameter
+    -Wno-unused-variable
+    -Wno-unused-parameter
+    -Wno-reorder-ctor
+  )
+
   # Required libs
   target_link_libraries(
     ${targetName}
     PRIVATE Result::Result
     PRIVATE cxxopts::cxxopts
+    PRIVATE fmt
+    PRIVATE magic_enum
+  )
+
+  # Include paths
+  target_include_directories(
+    ${targetName}
+    PRIVATE ${CMAKE_SOURCE_DIR}/include
+    PRIVATE ${CMAKE_SOURCE_DIR}/include/${base_dir}
   )
 
   # Add the libraries
   if (NQT_LINK_LIBS)
     target_link_libraries(
       ${targetName}
-      ${NQT_LINK_LIBS}
-      ${CMAKE_DL_LIBS}
+      PRIVATE ${NQT_LINK_LIBS}
+      PRIVATE ${CMAKE_DL_LIBS}
     )
   endif()
 
-  if (NQT_LLVM_LIBS)
-    llvm_map_components_to_libnames(llvm_libs support core irreader)
+  # LLVM Components
+  llvm_map_components_to_libnames(llvm_libs support core irreader)
 
-    target_link_libraries(
-      ${targetName}
-      ${llvm_libs}
-    )
-  endif()
+  target_link_libraries(
+    ${targetName}
+    # PRIVATE ${llvm_libs}
+    PRIVATE LLVM
+  )
 
   if (NQT_BINARY)
     set_target_properties(
