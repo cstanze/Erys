@@ -1,0 +1,8 @@
+[workspace]
+members = [
+  "compiler/erysc",
+  "compiler/span",
+  "compiler/errors",
+  "compiler/session",
+  "compiler/lexer"
+]
